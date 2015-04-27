@@ -20,7 +20,7 @@ author: jakeret
 from __future__ import print_function, division, absolute_import, unicode_literals
 
 import numpy as np
-from scipy.stats import multivariate_normal
+from scipy import stats
 from multiprocessing.pool import Pool
 from scipy import spatial
 from collections import namedtuple
@@ -43,7 +43,7 @@ class GaussianPrior(object):
         if theta is None:
             return np.random.multivariate_normal(self.mu, self.sigma)
         else:
-            return multivariate_normal.pdf(theta, self.mu, self.sigma)
+            return stats.multivariate_normal.pdf(theta, self.mu, self.sigma)
 
 
 class TophatPrior(object):
