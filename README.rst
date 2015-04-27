@@ -4,7 +4,7 @@ abcpmc
 
 A Python Approximate Bayesian Computing (ABC) Population Monte Carlo (PMC) implementation based on Sequential Monte Carlo (SMC) with Particle Filtering techniques.
 
-.. image:: abcpmc.png
+.. image:: https://raw.githubusercontent.com/jakeret/abcpmc/master/docs/abcpmc.png
    :alt: approximated 2d posterior (created with triangle.py).
    :align: center
 
@@ -24,8 +24,8 @@ Features
 
 * Detailed examples in IPython notebooks 
 
-	* A `2D gauss <http://nbviewer.ipython.org/url/www.phys.ethz.ch/~jakeret/2d_gauss.ipynb>`_ case study 
+	* A `2D gauss <http://nbviewer.ipython.org/github/jakeret/abcpmc/blob/master/notebooks/2d_gauss.ipynb>`_ case study 
 	
-	* A `toy model <http://nbviewer.ipython.org/url/www.phys.ethz.ch/~jakeret/toy_model.ipynb>`_ including a comparison to theoretical predictions
+	* A `toy model <http://nbviewer.ipython.org/github/jakeret/abcpmc/blob/master/notebooks/toy_model.ipynb>`_ including a comparison to theoretical predictions
 	
 	

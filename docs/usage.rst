@@ -5,7 +5,7 @@ Usage
 IPython notebook examples
 --------------------------
 
-Detailed examples are available in the project and online: A `2D gauss <http://nbviewer.ipython.org/url/www.phys.ethz.ch/~jakeret/2d_gauss.ipynb>`_ example and a `toy model <http://nbviewer.ipython.org/url/www.phys.ethz.ch/~jakeret/toy_model.ipynb>`_ including a comparison to theoretical predictions. 
+Detailed examples are available in the project and online: A `2D gauss <http://nbviewer.ipython.org/github/jakeret/abcpmc/blob/master/notebooks/2d_gauss.ipynb>`_ example and a `toy model <http://nbviewer.ipython.org/github/jakeret/abcpmc/blob/master/notebooks/toy_model.ipynb>`_ including a comparison to theoretical predictions. 
 
 General usage of abcpmc
 ------------------------
