@@ -5,9 +5,8 @@ before_install:
   - sudo apt-get install -qq python-numpy python-scipy
 
 python:
-- "3.4_with_system_site_packages"
-- "3.3_with_system_site_packages"
 - "2.7_with_system_site_packages"
+
 install:
 - pip install coveralls
 - pip install -r requirements.txt
