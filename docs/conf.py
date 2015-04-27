@@ -22,6 +22,12 @@ cwd = os.getcwd()
 parent = os.path.dirname(cwd)
 sys.path.insert(0, parent)
 
+import mock
+ 
+MOCK_MODULES = ['numpy', 'scipy', 'matplotlib', 'scipy.stats']
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = mock.Mock()
+
 import abcpmc
 
 # -- General configuration -----------------------------------------------------

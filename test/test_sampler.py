@@ -67,10 +67,16 @@ class TestPostfnWrapper(object):
         
 #         swrapper = pickle.dumps(wrapper)
 #         uppwrapper = pickle.loads(swrapper)
-        
+
 class TestWeightWrapper(object):
-    
+
     def test_compute_weights(self):
+        try:
+            from scipy.stats import multivariate_normal
+        except ImportError:
+            pytest.skip("Scipy.stats.multivariate_normal is not available")
+        
+        
         prior = lambda theta: 1
         samples = [1] * 10
         weights = [1/len(samples)] * len(samples)
