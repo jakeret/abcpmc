@@ -1,5 +1,5 @@
 numpy
-scipy
+scipy>=0.15.0
 Sphinx>=1.2.3
 mock>=1.0.1
 pytest>=2.6.3
