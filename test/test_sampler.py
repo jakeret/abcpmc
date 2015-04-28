@@ -6,10 +6,10 @@ Tests for `abcpmc` module.
 """
 from __future__ import print_function, division, absolute_import, unicode_literals
 
+import abcpmc
 import pytest
 import numpy as np
-import abcpmc
-import pickle
+from scipy import stats
 
 
 class TestTophatPrior(object):
@@ -48,6 +48,27 @@ class TestTophatPrior(object):
         assert prior(theta=[5, 5]) == 0
         assert prior(theta=[6, 6]) == 0
 
+class TestGaussianPrior(object):
+    
+    def test_normal(self):
+        prior = abcpmc.GaussianPrior([0,0], [[1,0],[0,1]])
+        
+        rngs = np.array([prior() for _ in range(10000)])
+        assert len(rngs.shape) == 2
+        D, p = stats.kstest(rngs[:,0], "norm")
+        
+        assert D < 0.015
+        
+    def test_pdf(self):
+        try:
+            from scipy.stats import multivariate_normal
+        except ImportError:
+            pytest.skip("Scipy.stats.multivariate_normal is not available")
+            
+        prior = abcpmc.GaussianPrior([0,0], [[1,0],[0,1]])
+        
+        theta = prior([0,0])
+        assert np.allclose(theta, 0.15915, 1e-4)
 
 class TestPostfnWrapper(object):
     
