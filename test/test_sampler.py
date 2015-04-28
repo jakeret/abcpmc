@@ -184,3 +184,21 @@ class TestKNNParticleProposal(object):
         wrapper = abcpmc.sampler.KNNParticleProposal(sampler, prior, sigma, eps, pool, {})
         
         assert wrapper._get_sigma(thetas[0], 2) == sigma
+
+class TestSampler(object):
+    
+    def test_sample(self):
+        N = 10
+        T = 2
+        postfn = lambda theta: None
+        
+        dist = lambda X, Y: 0
+        prior = abcpmc.TophatPrior([0], [100])
+        sampler = abcpmc.Sampler(N, 0, postfn, dist)
+        
+        eps_proposal = abcpmc.ConstEps(T, 10)
+        for i, pool in enumerate(sampler.sample(prior, eps_proposal)):
+            assert pool is not None
+            assert len(pool.thetas) == N
+        
+        assert i+1 == T
