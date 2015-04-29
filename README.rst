@@ -11,6 +11,10 @@ abcpmc
 .. image:: https://coveralls.io/repos/jakeret/abcpmc/badge.png?branch=master
         :target: https://coveralls.io/r/jakeret/abcpmc?branch=master
 
+.. image:: http://img.shields.io/badge/arXiv-1504.07245-orange.svg?style=flat
+        :target: http://arxiv.org/abs/1504.07245
+
+
 
 A Python Approximate Bayesian Computing (ABC) Population Monte Carlo (PMC) implementation based on Sequential Monte Carlo (SMC) with Particle Filtering techniques.
 
