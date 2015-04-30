@@ -37,7 +37,7 @@ The full documentation can be generated with Sphinx"""
 
 history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
-requires = ["numpy", "scipy"] #during runtime
+requires = ["numpy", "scipy>=0.15"] #during runtime
 tests_require=['pytest>=2.3', 'mock'] #for testing
 
 PACKAGE_PATH = os.path.abspath(os.path.join(__file__, os.pardir))
@@ -49,7 +49,7 @@ setup(
     long_description=readme + '\n\n' + doclink + '\n\n' + history,
     author='Joel Akeret',
     author_email='jakeret@phys.ethz.ch',
-    url='http://www.cosmology.ethz.ch/research/software-lab.html',
+    url='http://www.cosmology.ethz.ch/research/software-lab/abcpmc.html',
     packages=find_packages(PACKAGE_PATH, "test"),
     package_dir={'abcpmc': 'abcpmc'},
     include_package_data=True,
