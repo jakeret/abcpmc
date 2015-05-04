@@ -44,7 +44,7 @@ PACKAGE_PATH = os.path.abspath(os.path.join(__file__, os.pardir))
 
 setup(
     name='abcpmc',
-    version='0.1.0',
+    version='0.1.1',
     description='approximate bayesian computing with population monte carlo',
     long_description=readme + '\n\n' + doclink + '\n\n' + history,
     author='Joel Akeret',
