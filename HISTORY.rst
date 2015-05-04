@@ -6,7 +6,7 @@ History
 ++++++++++++++++++
 
 * Python 3 support
-* Minor fixed
+* Minor fixes
 * Improved documentation
 
 0.1.0 (2015-04-28)
