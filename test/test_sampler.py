@@ -202,3 +202,13 @@ class TestSampler(object):
             assert len(pool.thetas) == N
         
         assert i+1 == T
+
+def test_weighted_avg_and_std():
+    values = np.random.normal(size=1000)
+    weights = np.ones((1000))
+    
+    avg, std = abcpmc.weighted_avg_and_std(values, weights)
+    
+    assert np.allclose(avg, np.average(values))
+    assert np.allclose(std, np.std(values))
+    

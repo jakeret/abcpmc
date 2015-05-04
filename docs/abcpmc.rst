@@ -24,6 +24,9 @@ abcpmc Package
    :members: 
    :show-inheritance:
 
+.. autofunction:: abcpmc.sampler.weighted_cov
+
+.. autofunction:: abcpmc.sampler.weighted_avg_and_std
 
 :mod:`threshold` Module
 -----------------------
