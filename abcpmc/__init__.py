@@ -16,5 +16,5 @@ __email__ = 'jakeret@phys.ethz.ch'
 __version__ = '0.1.0'
 __credits__ = 'ETH Zurich, Institute for Astronomy'
 
-from sampler import *
-from threshold import *
+from abcpmc.sampler import *
+from abcpmc.threshold import *

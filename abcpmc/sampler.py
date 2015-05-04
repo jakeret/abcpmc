@@ -19,13 +19,14 @@ author: jakeret
 '''
 from __future__ import print_function, division, absolute_import, unicode_literals
 
-import numpy as np
-from scipy import stats
 from multiprocessing.pool import Pool
-from scipy import spatial
 from collections import namedtuple
 
-__all__ = ["GaussianPrior", "TophatPrior", "ParticleProposal", "KNNParticleProposal", "OLCMParticleProposal", "Sampler", "weighted_cov"]
+import numpy as np
+from scipy import stats
+from scipy import spatial
+
+__all__ = ["GaussianPrior", "TophatPrior", "ParticleProposal", "KNNParticleProposal", "OLCMParticleProposal", "Sampler", "weighted_cov", "weighted_avg_and_std"]
 
 class GaussianPrior(object):
     """
@@ -224,7 +225,7 @@ class Sampler(object):
             cnts = np.sum([cnt for (_, _, cnt) in res])
             
             wrapper = _WeightWrapper(prior, ws, sigma, prev_thetas)
-            wt = np.array(self.mapFunc(wrapper, thetas))
+            wt = np.array(list(self.mapFunc(wrapper, thetas)))
             ws = wt/np.sum(wt)
             
             pool = PoolSpec(t, eps, self.N/cnts, thetas, dists, ws)
@@ -241,24 +242,6 @@ class Sampler(object):
         if self.pool is not None:
             self.pool.close()
 
-def weighted_cov(values, weights):
-    """
-    Computes a weighted covariance matrix
-    :param values: the array of values
-    :param weights: array of weights for each entry of the values
-    
-    :returns sigma: the weighted covariance matrix
-    """
-    
-    n = values.shape[1]
-    sigma = np.empty((n, n))
-    w = weights.sum() / (weights.sum()**2 - (weights**2).sum()) 
-    average = np.average(values, axis=0, weights=weights)
-    for j in range(n):
-        for k in range(n):
-            sigma[j, k] = w * np.sum(weights * ((values[:, j] - average[j]) * (values[:, k] - average[k])))
-    return sigma
-
    
 class _WeightWrapper(object):  # @DontTrace
     """
@@ -273,8 +256,7 @@ class _WeightWrapper(object):  # @DontTrace
         self.samples = samples
     
     def __call__(self, theta):
-        kernel = GaussianPrior(theta, self.sigma) #reusing the GaussianPrior class as gaussian kernel
-#         w = self.prior(theta) / np.sum([self.ws[j] * kernel(thetaj) for j, thetaj, in enumerate(self.samples)])
+        kernel = stats.multivariate_normal(theta, self.sigma).pdf
         w = self.prior(theta) / np.sum(self.ws * kernel(self.samples))
         return w
     
@@ -301,3 +283,39 @@ class _PostfnWrapper(object):  # @DontTrace
                 break
             cnt+=1
         return thetai, p, cnt
+
+def weighted_cov(values, weights):
+    """
+    Computes a weighted covariance matrix
+    
+    :param values: the array of values
+    :param weights: array of weights for each entry of the values
+    
+    :returns sigma: the weighted covariance matrix
+    """
+    
+    n = values.shape[1]
+    sigma = np.empty((n, n))
+    w = weights.sum() / (weights.sum()**2 - (weights**2).sum()) 
+    average = np.average(values, axis=0, weights=weights)
+    for j in range(n):
+        for k in range(n):
+            sigma[j, k] = w * np.sum(weights * ((values[:, j] - average[j]) * (values[:, k] - average[k])))
+    return sigma
+
+
+def weighted_avg_and_std(values, weights, axis=None):
+    """
+    Return the weighted avg and standard deviation.
+    
+    :param values: Array with the values
+    :param weights: Array with the same shape as values containing the weights
+    :param axis: (optional) the axis to be used for the computation
+    
+    :returns avg, sigma: weighted average and standard deviation
+    """
+    #http://stackoverflow.com/a/2415343/4067032
+    avg = np.average(values, weights=weights, axis=axis)
+    # Fast and numerically precise
+    variance = np.average((values-avg)**2, weights=weights, axis=axis)
+    return (avg, np.sqrt(variance))
