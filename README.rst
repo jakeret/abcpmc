@@ -24,7 +24,7 @@ A Python Approximate Bayesian Computing (ABC) Population Monte Carlo (PMC) imple
 
 The **abcpmc** package has been developed at ETH Zurich in the `Software Lab of the Cosmology Research Group <http://www.cosmology.ethz.ch/research/software-lab.html>`_ of the `ETH Institute of Astronomy <http://www.astro.ethz.ch>`_. 
 
-The development is coordinated on `GitHub <http://github.com/jakeret/abcpmc>`_ and contributions are welcome. The documentation of **abcpmc** is available at `readthedocs.org <http://abcpmc.readthedocs.org/>`_.
+The development is coordinated on `GitHub <http://github.com/jakeret/abcpmc>`_ and contributions are welcome. The documentation of **abcpmc** is available at `readthedocs.org <http://abcpmc.readthedocs.org/>`_ and the package is distributed over `PyPI <https://pypi.python.org/pypi/abcpmc>`_.
 
 Features
 --------
