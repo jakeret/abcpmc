@@ -30,6 +30,16 @@ class TestTophatPrior(object):
         assert prior(theta=2)   == 1
         assert prior(theta=max) == 0
         assert prior(theta=6)   == 0
+
+        assert np.all(prior(theta=[0,0])==[0, 0]) 
+        
+        assert np.all(prior(theta=[0,min])==[0, 1]) 
+        assert np.all(prior(theta=[min,0])==[1, 0]) 
+
+        assert np.all(prior(theta=[min,2])==[1, 1]) 
+
+        assert np.all(prior(theta=[max,6])==[0, 0]) 
+        
         
     def test_tophat_multivariate(self):
         min=[1,2]
@@ -41,13 +51,17 @@ class TestTophatPrior(object):
         vals = prior()
         assert np.all(vals>min)
         assert np.all(vals<=max)
-        
+
         assert prior(theta=[0, 0]) == 0
         assert prior(theta=[1, 2]) == 1
         assert prior(theta=[2, 3]) == 1
         assert prior(theta=[5, 5]) == 0
         assert prior(theta=[6, 6]) == 0
 
+        assert np.all(prior(theta=[[0, 0],[0, 0]]) == [0, 0])
+        assert np.all(prior(theta=[[0, 0],[1, 2]]) == [0, 1])
+        assert np.all(prior(theta=[[1, 2],[1, 2]]) == [1, 1])
+        
 class TestGaussianPrior(object):
     
     def test_normal(self):
@@ -193,7 +207,7 @@ class TestSampler(object):
         postfn = lambda theta: None
         
         dist = lambda X, Y: 0
-        prior = abcpmc.TophatPrior([0], [100])
+        prior = abcpmc.TophatPrior([0,0], [100, 100])
         sampler = abcpmc.Sampler(N, 0, postfn, dist)
         
         eps_proposal = abcpmc.ConstEps(T, 10)

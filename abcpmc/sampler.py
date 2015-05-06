@@ -65,7 +65,11 @@ class TophatPrior(object):
         if theta is None:
             return np.array([np.random.uniform(mi, ma) for (mi, ma) in zip(self.min, self.max)])
         else:
-            return 1 if np.all(theta < self.max) and np.all(theta >= self.min) else 0
+            theta = np.atleast_1d(theta).reshape(-1, len(self.min))
+            v = np.zeros(len(theta))
+            m = np.all(theta < self.max, axis=1) * np.all(theta >= self.min, axis=1)
+            v[m] = 1
+            return v
 
 class ParticleProposal(object):
     """
@@ -204,12 +208,9 @@ class Sampler(object):
         yield pool
         
         prev_thetas = thetas.copy()
-#         samples.append(thetas)
         
-        ws = wt
         for i, eps in enumerate(eps_proposal):
-            t = i+1
-            sigma = 2 * weighted_cov(thetas, ws)
+            sigma = 2 * weighted_cov(pool.thetas, pool.ws)
 
             particleProposal = self.particle_proposal_cls(self,
                                                           prior, 
@@ -217,23 +218,23 @@ class Sampler(object):
                                                           eps,
                                                           pool, 
                                                           self.particle_proposal_kwargs)
-            wrapper = _FunctionWrapper(particleProposal)
             
-            res = self.mapFunc(wrapper, range(self.N))
+            res = self.mapFunc(_FunctionWrapper(particleProposal), range(self.N))
+            
             thetas = np.array([theta for (theta, _, _) in res])
             dists = np.array([dist for (_, dist, _) in res]) 
             cnts = np.sum([cnt for (_, _, cnt) in res])
             
-            wrapper = _WeightWrapper(prior, ws, sigma, prev_thetas)
+            wrapper = _WeightWrapper(prior, pool.ws, sigma, prev_thetas)
             wt = np.array(list(self.mapFunc(wrapper, thetas)))
             ws = wt/np.sum(wt)
             
-            pool = PoolSpec(t, eps, self.N/cnts, thetas, dists, ws)
+            pool = PoolSpec(i+1, eps, self.N/cnts, thetas, dists, ws)
             yield pool
             
             prev_thetas = thetas.copy()
-#             samples.append(thetas)
-            
+        eps_proposal.reset()
+        
     def close(self):
         """
         Tries to close the pool (avoid hanging threads)
