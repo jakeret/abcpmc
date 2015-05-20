@@ -2,6 +2,13 @@
 
 History
 -------
+0.x.x (2015-xx-xx)
+++++++++++++++++++
+
+* Simplifying the code
+* Improved documentation
+
+
 0.1.1 (2015-05-03)
 ++++++++++++++++++
 

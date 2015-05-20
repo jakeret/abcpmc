@@ -103,7 +103,7 @@ class TestWeightWrapper(object):
         weights = [1/len(samples)] * len(samples)
         sigma = 1
         
-        wrapper = abcpmc.sampler._WeightWrapper(prior, weights, sigma, samples)
+        wrapper = abcpmc.sampler._WeightWrapper(prior, sigma, weights, samples)
         rweight = wrapper(theta=0)
         
         assert rweight is not None
@@ -121,19 +121,20 @@ class TestParticleProposal(object):
     
     def test_propose(self):
         eps = 1
-        prior = lambda : 1
         thetai = 1
         postfn = lambda theta: thetai
         p = 0.5
         dist = lambda x,y: p
         Y = None
-        sampler = abcpmc.Sampler(1, Y, postfn, dist)
-        sigma = 1
+        sampler = abcpmc.Sampler(2, Y, postfn, dist)
         
-        pool = abcpmc.sampler.PoolSpec(1, eps, 1, np.array([[1]]), [1], [1])
+        thetas = np.array([[0.5], [1]])
+        weights = np.array([0.75, 0.25])
+        pool = abcpmc.sampler.PoolSpec(1, eps, 1, thetas, None, weights)
         
-        wrapper = abcpmc.sampler.ParticleProposal(sampler, prior, sigma, eps, pool, {})
+        wrapper = abcpmc.sampler.ParticleProposal(sampler, eps, pool, {})
         
+        sigma = 0.25
         assert wrapper._get_sigma(None) == sigma
         
         rthetai, rp, cnt = wrapper(0)
@@ -145,7 +146,6 @@ class TestOLCMParticleProposal(object):
     
     def test_propose(self):
         eps = 1
-        prior = lambda : 1
         thetai = 1
         postfn = lambda theta: thetai
         p = 0.5
@@ -159,7 +159,7 @@ class TestOLCMParticleProposal(object):
         ws = np.array([1, 1, 1])
         pool = abcpmc.sampler.PoolSpec(1, eps, 1, thetas, dists, ws)
         
-        wrapper = abcpmc.sampler.OLCMParticleProposal(sampler, prior, sigma, eps, pool, {})
+        wrapper = abcpmc.sampler.OLCMParticleProposal(sampler, eps, pool, {})
         
         assert wrapper._get_sigma(thetas[0]) == sigma
 
@@ -167,7 +167,6 @@ class TestKNNParticleProposal(object):
     
     def test_propose(self):
         eps = 1
-        prior = lambda : 1
         thetai = 1
         postfn = lambda theta: thetai
         p = 0.5
@@ -181,7 +180,7 @@ class TestKNNParticleProposal(object):
         ws = np.array([1, 1, 1])
         pool = abcpmc.sampler.PoolSpec(1, eps, 1, thetas, dists, ws)
         
-        wrapper = abcpmc.sampler.KNNParticleProposal(sampler, prior, sigma, eps, pool, {})
+        wrapper = abcpmc.sampler.KNNParticleProposal(sampler, eps, pool, {})
         
         assert wrapper._get_sigma(thetas[0], 2) == sigma
 
