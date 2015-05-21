@@ -70,7 +70,7 @@ class TestGaussianPrior(object):
         theta = prior([0,0])
         assert np.allclose(theta, 0.15915, 1e-4)
 
-class TestPostfnWrapper(object):
+class TestRejectionSamplingWrapperWrapper(object):
     
     def test_new_particle(self):
         eps = 1
@@ -80,7 +80,7 @@ class TestPostfnWrapper(object):
         p = 0.5
         dist = lambda x,y: p
         Y = None
-        wrapper = abcpmc.sampler._PostfnWrapper(eps, prior, postfn, dist, Y)
+        wrapper = abcpmc.sampler._RejectionSamplingWrapper(eps, prior, postfn, dist, Y)
         rthetai, rp, cnt = wrapper(0)
         assert thetai == rthetai
         assert p == rp
