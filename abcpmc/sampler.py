@@ -33,7 +33,7 @@ class GaussianPrior(object):
     Normal gaussian prior
      
     :param mu: scalar or vector of means
-    :param sigma: scalar std or covariance matrix
+    :param sigma: scalar variance or covariance matrix
     """
     
     def __init__(self, mu, sigma):
@@ -71,16 +71,16 @@ class ParticleProposal(object):
     """
     Creates new particles using twice the weighted covariance matrix (Beaumont et al. 2009)
     """
-    def __init__(self, sampler, prior, sigma, eps, pool, kwargs):
-        self.prior = prior
+    def __init__(self, sampler, eps, pool, kwargs):
         self.postfn = sampler.postfn
         self.distfn = sampler.dist
         self.Y = sampler.Y
         self.N = sampler.N
-        self.sigma = sigma
         self.eps = eps
         self.pool = pool
         self.kwargs = kwargs
+        
+        self.sigma = 2 * weighted_cov(pool.thetas, pool.ws)
     
     def __call__(self, i):
         cnt = 1
@@ -104,6 +104,7 @@ class ParticleProposal(object):
 class KNNParticleProposal(ParticleProposal):
     """
     Creates new particles using a covariance matrix from the K-nearest neighbours  (Fillipi et al. 2012)
+    Set `k` as key-word arguement in `abcpmc.Sampler.particle_proposal_kwargs`
     """
     
     def _get_sigma(self, theta, k):
@@ -132,20 +133,6 @@ class OLCMParticleProposal(ParticleProposal):
                 sigma[i, j] = np.sum(weights * (thetas[:, i] - m[i]) * (thetas[:, j] - m[j]).T)  + (m[i] - theta[i]) * (m[j] - theta[j])
         return sigma
 
-
-        
-        
-
-class _FunctionWrapper(object):
-    """
-    Wrapper for the particle proposal functionality needed to be pickle-able
-    """
-    
-    def __init__(self, func):
-        self.func = func
-    
-    def __call__(self, i):
-        return self.func(i)
 
 """Namedtuple representing a pool of one sampling iteration"""
 PoolSpec = namedtuple("PoolSpec", ["t", "eps", "ratio", "thetas", "dists", "ws"])
@@ -186,53 +173,43 @@ class Sampler(object):
         """
         Launches the sampling process. Yields the intermediate results per iteration.
         
-        :param eps: an instance of a threshold proposal (or an other callable) see :py:class:`sampler.ConstEps`
         :param prior: instance of a prior definition (or an other callable)  see :py:class:`sampler.GaussianPrior`
+        :param eps_proposal: an instance of a threshold proposal (or an other callable) see :py:class:`sampler.ConstEps`
         
         :yields pool: yields a namedtuple representing the values of one iteration
         """
         
         eps = eps_proposal.next()
-        wrapper = _PostfnWrapper(eps, prior, self.postfn, self.dist, self.Y)
+        wrapper = _RejectionSamplingWrapper(eps, prior, self.postfn, self.dist, self.Y)
+        
         res = self.mapFunc(wrapper, range(self.N))
         thetas = np.array([theta for (theta, _, _) in res])
         dists = np.array([dist for (_, dist, _) in res])
         cnts = np.sum([cnt for (_, _, cnt) in res])
-        wt = np.ones(self.N) / self.N
+        ws = np.ones(self.N) / self.N
         
-        pool = PoolSpec(0, eps, self.N/cnts, thetas, dists, wt)
+        pool = PoolSpec(0, eps, self.N/cnts, thetas, dists, ws)
         yield pool
         
-        prev_thetas = thetas.copy()
-#         samples.append(thetas)
-        
-        ws = wt
         for i, eps in enumerate(eps_proposal):
             t = i+1
-            sigma = 2 * weighted_cov(thetas, ws)
 
-            particleProposal = self.particle_proposal_cls(self,
-                                                          prior, 
-                                                          sigma, 
-                                                          eps,
-                                                          pool, 
-                                                          self.particle_proposal_kwargs)
-            wrapper = _FunctionWrapper(particleProposal)
+            particleProposal = self.particle_proposal_cls(self, eps, pool, self.particle_proposal_kwargs)
             
-            res = self.mapFunc(wrapper, range(self.N))
+            res = self.mapFunc(particleProposal, range(self.N))
             thetas = np.array([theta for (theta, _, _) in res])
             dists = np.array([dist for (_, dist, _) in res]) 
             cnts = np.sum([cnt for (_, _, cnt) in res])
             
-            wrapper = _WeightWrapper(prior, ws, sigma, prev_thetas)
+            sigma = 2 * weighted_cov(pool.thetas, pool.ws)
+            wrapper = _WeightWrapper(prior, sigma, pool.ws, pool.thetas)
+            
             wt = np.array(list(self.mapFunc(wrapper, thetas)))
             ws = wt/np.sum(wt)
             
             pool = PoolSpec(t, eps, self.N/cnts, thetas, dists, ws)
             yield pool
             
-            prev_thetas = thetas.copy()
-#             samples.append(thetas)
             
     def close(self):
         """
@@ -249,18 +226,18 @@ class _WeightWrapper(object):  # @DontTrace
     Allows for pickling the functionality.
     """
     
-    def __init__(self, prior, ws, sigma, samples):
+    def __init__(self, prior, sigma, ws, thetas):
         self.prior = prior
-        self.ws = ws
         self.sigma = sigma
-        self.samples = samples
+        self.ws = ws
+        self.thetas = thetas
     
     def __call__(self, theta):
         kernel = stats.multivariate_normal(theta, self.sigma).pdf
-        w = self.prior(theta) / np.sum(self.ws * kernel(self.samples))
+        w = self.prior(theta) / np.sum(self.ws * kernel(self.thetas))
         return w
     
-class _PostfnWrapper(object):  # @DontTrace
+class _RejectionSamplingWrapper(object):  # @DontTrace
     """
     Wraps the computation of new particles in the first iteration (simple rejection sampling).
     Allows for pickling the functionality.
