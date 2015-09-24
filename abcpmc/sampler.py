@@ -76,7 +76,7 @@ class ParticleProposal(object):
         self.distfn = sampler.dist
         self.Y = sampler.Y
         self.N = sampler.N
-        self.eps = eps
+        self.eps = np.asanyarray(eps)
         self.pool = pool
         self.kwargs = kwargs
         
@@ -91,9 +91,9 @@ class ParticleProposal(object):
             sigma = np.atleast_2d(sigma)
             thetap = np.random.multivariate_normal(theta, sigma)
             X = self.postfn(thetap)
-            p = self.distfn(X, self.Y)
+            p = np.asarray(self.distfn(X, self.Y))
             
-            if p <= self.eps:
+            if np.all(p <= self.eps):
                 break
             cnt+=1
         return thetap, p, cnt
@@ -119,7 +119,10 @@ class OLCMParticleProposal(ParticleProposal):
     """
     
     def _get_sigma(self, theta):
-        idx = self.pool.dists<self.pool.eps
+        if len(self.eps.shape) == 0:
+            idx = self.pool.dists < self.eps
+        else:
+            idx = np.all(self.pool.dists < self.eps, axis=1)
         thetas = self.pool.thetas[idx]
         weights = self.pool.ws[idx]
         weights = weights/np.sum(weights)
@@ -215,8 +218,7 @@ class Sampler(object):
         """
         Tries to close the pool (avoid hanging threads)
         """
-        
-        if self.pool is not None:
+        if hasattr(self, "pool") and self.pool is not None:
             self.pool.close()
 
    
@@ -244,7 +246,7 @@ class _RejectionSamplingWrapper(object):  # @DontTrace
     """
     
     def __init__(self, eps, prior, postfn, dist, Y):
-        self.eps = eps
+        self.eps = np.asarray(eps)
         self.prior = prior
         self.postfn = postfn
         self.dist = dist
@@ -255,8 +257,8 @@ class _RejectionSamplingWrapper(object):  # @DontTrace
         while True:
             thetai = self.prior()
             X = self.postfn(thetai)
-            p = self.dist(X, self.Y)
-            if p <= self.eps:
+            p = np.asarray(self.dist(X, self.Y))
+            if np.all(p <= self.eps):
                 break
             cnt+=1
         return thetai, p, cnt
