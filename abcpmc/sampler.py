@@ -26,7 +26,15 @@ import numpy as np
 from scipy import stats
 from scipy import spatial
 
-__all__ = ["GaussianPrior", "TophatPrior", "ParticleProposal", "KNNParticleProposal", "OLCMParticleProposal", "Sampler", "weighted_cov", "weighted_avg_and_std"]
+__all__ = ["GaussianPrior", 
+           "TophatPrior", 
+           "ParticleProposal", 
+           "KNNParticleProposal", 
+           "OLCMParticleProposal", 
+           "Sampler", 
+           "weighted_cov", 
+           "weighted_avg_and_std"
+           ]
 
 class GaussianPrior(object):
     """

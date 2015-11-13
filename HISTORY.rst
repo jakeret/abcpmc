@@ -2,9 +2,11 @@
 
 History
 -------
-0.x.x (2015-xx-xx)
+0.1.2 (2015-11-xx)
 ++++++++++++++++++
 
+* Added support for sampling with multiple distance simultaneously
+* Clean setup.py 
 * Simplifying the code
 * Improved documentation
 
