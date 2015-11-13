@@ -10,6 +10,7 @@ import abcpmc
 import pytest
 import numpy as np
 from scipy import stats
+from mock.mock import Mock
 
 
 class TestTophatPrior(object):
@@ -89,6 +90,26 @@ class TestRejectionSamplingWrapperWrapper(object):
 #         swrapper = pickle.dumps(wrapper)
 #         uppwrapper = pickle.loads(swrapper)
 
+    def test_new_particle_multidist(self):
+        eps = 1.
+        threshold = [eps, eps]
+        prior = lambda : 1
+        thetai = 1
+        postfn = lambda theta: thetai
+        dist = Mock()
+        
+        distances = [[eps*2, eps*2], 
+                    [eps/2, eps*2],
+                    [eps*2, eps/2],
+                    [eps, eps]]
+        
+        dist.side_effect = distances
+        Y = None
+        wrapper = abcpmc.sampler._RejectionSamplingWrapper(threshold, prior, postfn, dist, Y)
+        _, _, cnt = wrapper(0)
+        assert cnt == len(distances)
+
+
 class TestWeightWrapper(object):
 
     def test_compute_weights(self):
@@ -142,17 +163,42 @@ class TestParticleProposal(object):
         assert p == rp
         assert cnt == 1
     
+    def test_propose_multidist(self):
+        eps = 1.
+        threshold = [eps, eps]
+        thetai = 1
+        postfn = lambda theta: thetai
+        dist = Mock()
+        
+        distances = [[eps*2, eps*2], 
+                    [eps/2, eps*2],
+                    [eps*2, eps/2],
+                    [eps, eps]]
+        
+        dist.side_effect = distances
+        Y = None
+        sampler = abcpmc.Sampler(2, Y, postfn, dist)
+        
+        thetas = np.array([[0.5], [1]])
+        weights = np.array([0.75, 0.25])
+        pool = abcpmc.sampler.PoolSpec(1, threshold, 1, thetas, None, weights)
+        
+        wrapper = abcpmc.sampler.ParticleProposal(sampler, threshold, pool, {})
+        
+        _, _, cnt = wrapper(0)
+        assert cnt == len(distances)
+    
 class TestOLCMParticleProposal(object):
     
-    def test_propose(self):
-        eps = 1
+    def test_get_sigma(self):
+        eps = 1.1
         thetai = 1
         postfn = lambda theta: thetai
         p = 0.5
         dist = lambda x,y: p
         Y = None
         sampler = abcpmc.Sampler(1, Y, postfn, dist)
-        sigma = 1
+        
         
         thetas = np.array([[1], [1], [2]])
         dists = np.array([1, 1, 2])
@@ -161,6 +207,34 @@ class TestOLCMParticleProposal(object):
         
         wrapper = abcpmc.sampler.OLCMParticleProposal(sampler, eps, pool, {})
         
+        sigma = np.var(thetas[:1])
+        assert wrapper._get_sigma(thetas[0]) == sigma
+
+    def test_get_sigma_multidist(self):
+        eps = 1.
+        threshold = [eps, eps]
+
+        thetai = 1
+        postfn = lambda theta: thetai
+        p = 0.5
+        dist = lambda x,y: p
+        Y = None
+        sampler = abcpmc.Sampler(1, Y, postfn, dist)
+        
+        
+        dists = np.array([[eps/2, eps/2], 
+                          [eps/2, eps/2], 
+                          [eps*2, eps*2], 
+                          [eps/2, eps*2], 
+                          [eps*2, eps/2] ])
+        
+        thetas = np.array([[1], [1], [2], [2], [2]])
+        ws = np.array([1]*len(dists))
+        pool = abcpmc.sampler.PoolSpec(1, threshold, 1, thetas, dists, ws)
+        
+        wrapper = abcpmc.sampler.OLCMParticleProposal(sampler, threshold, pool, {})
+        
+        sigma = np.var(thetas[:1])
         assert wrapper._get_sigma(thetas[0]) == sigma
 
 class TestKNNParticleProposal(object):
