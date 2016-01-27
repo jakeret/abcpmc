@@ -2,7 +2,7 @@
 
 History
 -------
-0.1.2 (2015-11-xx)
+0.1.2 (2016-01-27)
 ++++++++++++++++++
 
 * Added support for sampling with multiple distance simultaneously

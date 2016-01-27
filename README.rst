@@ -2,14 +2,17 @@
 abcpmc
 =============================
 
-.. image:: https://badge.fury.io/py/abcpmc.png
+.. image:: https://badge.fury.io/py/abcpmc.svg
     :target: http://badge.fury.io/py/abcpmc
 
-.. image:: https://travis-ci.org/jakeret/abcpmc.png?branch=master
+.. image:: https://travis-ci.org/jakeret/abcpmc.svg?branch=master
         :target: https://travis-ci.org/jakeret/abcpmc
         
-.. image:: https://coveralls.io/repos/jakeret/abcpmc/badge.png?branch=master
+.. image:: https://coveralls.io/repos/jakeret/abcpmc/badge.svg?branch=master
         :target: https://coveralls.io/r/jakeret/abcpmc?branch=master
+
+.. image:: https://img.shields.io/badge/docs-latest-blue.svg?style=flat
+        :target: http://abcpmc.readthedocs.org/en/latest
 
 .. image:: http://img.shields.io/badge/arXiv-1504.07245-orange.svg?style=flat
         :target: http://arxiv.org/abs/1504.07245
