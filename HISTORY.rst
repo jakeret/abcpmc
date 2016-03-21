@@ -2,6 +2,12 @@
 
 History
 -------
+0.x.x (2016-0x-xx)
+++++++++++++++++++
+
+* Fixed map issue under Py3
+* Replaced numpy.random with a RandomState
+
 0.1.2 (2016-01-27)
 ++++++++++++++++++
 
