@@ -47,10 +47,11 @@ class GaussianPrior(object):
     def __init__(self, mu, sigma):
         self.mu = mu
         self.sigma = sigma
+        self._random = np.random.mtrand.RandomState()
         
     def __call__(self, theta=None):
         if theta is None:
-            return np.random.multivariate_normal(self.mu, self.sigma)
+            return self._random.multivariate_normal(self.mu, self.sigma)
         else:
             return stats.multivariate_normal.pdf(theta, self.mu, self.sigma)
 
@@ -66,12 +67,13 @@ class TophatPrior(object):
     def __init__(self, min, max):
         self.min = np.atleast_1d(min)
         self.max = np.atleast_1d(max)
+        self._random = np.random.mtrand.RandomState()
         assert self.min.shape == self.max.shape
         assert np.all(self.min < self.max)
         
     def __call__(self, theta=None):
         if theta is None:
-            return np.array([np.random.uniform(mi, ma) for (mi, ma) in zip(self.min, self.max)])
+            return np.array([self._random.uniform(mi, ma) for (mi, ma) in zip(self.min, self.max)])
         else:
             return 1 if np.all(theta < self.max) and np.all(theta >= self.min) else 0
 
@@ -82,6 +84,7 @@ class ParticleProposal(object):
     def __init__(self, sampler, eps, pool, kwargs):
         self.postfn = sampler.postfn
         self.distfn = sampler.dist
+        self._random = sampler._random
         self.Y = sampler.Y
         self.N = sampler.N
         self.eps = np.asanyarray(eps)
@@ -92,12 +95,14 @@ class ParticleProposal(object):
     
     def __call__(self, i):
         cnt = 1
+        # setting seed to prevent problem with multiprocessing
+        self._random.seed(i)
         while True:
-            idx = np.random.choice(range(self.N), 1, p= self.pool.ws/np.sum(self.pool.ws))[0]
+            idx = self._random.choice(range(self.N), 1, p= self.pool.ws/np.sum(self.pool.ws))[0]
             theta = self.pool.thetas[idx]
             sigma = self._get_sigma(theta, **self.kwargs)
             sigma = np.atleast_2d(sigma)
-            thetap = np.random.multivariate_normal(theta, sigma)
+            thetap = self._random.multivariate_normal(theta, sigma)
             X = self.postfn(thetap)
             p = np.asarray(self.distfn(X, self.Y))
             
@@ -168,6 +173,7 @@ class Sampler(object):
         self.Y = Y
         self.postfn = postfn
         self.dist = dist
+        self._random = np.random.mtrand.RandomState()
 
         if pool is not None:
             self.pool = pool
@@ -191,7 +197,7 @@ class Sampler(object):
         """
         
         eps = eps_proposal.next()
-        wrapper = _RejectionSamplingWrapper(eps, prior, self.postfn, self.dist, self.Y)
+        wrapper = _RejectionSamplingWrapper(self, eps, prior)
         
         res = list(self.mapFunc(wrapper, range(self.N)))
         thetas = np.array([theta for (theta, _, _) in res])
@@ -251,19 +257,25 @@ class _RejectionSamplingWrapper(object):  # @DontTrace
     Allows for pickling the functionality.
     """
     
-    def __init__(self, eps, prior, postfn, dist, Y):
+    def __init__(self, sampler, eps, prior):
+        self.postfn = sampler.postfn
+        self.distfn = sampler.dist
+        self._random = sampler._random
+        self.Y = sampler.Y
         self.eps = np.asarray(eps)
         self.prior = prior
-        self.postfn = postfn
-        self.dist = dist
-        self.Y = Y
     
     def __call__(self, i):
         cnt = 1
+        try: # setting seed to prevent problem with multiprocessing 
+            self._random.seed(i)
+            self.prior._random = self._random 
+        except: pass
+        
         while True:
             thetai = self.prior()
             X = self.postfn(thetai)
-            p = np.asarray(self.dist(X, self.Y))
+            p = np.asarray(self.distfn(X, self.Y))
             if np.all(p <= self.eps):
                 break
             cnt+=1

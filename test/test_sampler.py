@@ -81,7 +81,9 @@ class TestRejectionSamplingWrapperWrapper(object):
         p = 0.5
         dist = lambda x,y: p
         Y = None
-        wrapper = abcpmc.sampler._RejectionSamplingWrapper(eps, prior, postfn, dist, Y)
+        
+        sampler = abcpmc.Sampler(2, Y, postfn, dist)
+        wrapper = abcpmc.sampler._RejectionSamplingWrapper(sampler, eps, prior)
         rthetai, rp, cnt = wrapper(0)
         assert thetai == rthetai
         assert p == rp
@@ -105,7 +107,8 @@ class TestRejectionSamplingWrapperWrapper(object):
         
         dist.side_effect = distances
         Y = None
-        wrapper = abcpmc.sampler._RejectionSamplingWrapper(threshold, prior, postfn, dist, Y)
+        sampler = abcpmc.Sampler(2, Y, postfn, dist)
+        wrapper = abcpmc.sampler._RejectionSamplingWrapper(sampler, threshold, prior)
         _, _, cnt = wrapper(0)
         assert cnt == len(distances)
 
