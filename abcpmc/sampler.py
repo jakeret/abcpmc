@@ -193,7 +193,7 @@ class Sampler(object):
         eps = eps_proposal.next()
         wrapper = _RejectionSamplingWrapper(eps, prior, self.postfn, self.dist, self.Y)
         
-        res = self.mapFunc(wrapper, range(self.N))
+        res = list(self.mapFunc(wrapper, range(self.N)))
         thetas = np.array([theta for (theta, _, _) in res])
         dists = np.array([dist for (_, dist, _) in res])
         cnts = np.sum([cnt for (_, _, cnt) in res])
@@ -202,12 +202,10 @@ class Sampler(object):
         pool = PoolSpec(0, eps, self.N/cnts, thetas, dists, ws)
         yield pool
         
-        for i, eps in enumerate(eps_proposal):
-            t = i+1
-
+        for t, eps in enumerate(eps_proposal, 1):
             particleProposal = self.particle_proposal_cls(self, eps, pool, self.particle_proposal_kwargs)
             
-            res = self.mapFunc(particleProposal, range(self.N))
+            res = list(self.mapFunc(particleProposal, range(self.N)))
             thetas = np.array([theta for (theta, _, _) in res])
             dists = np.array([dist for (_, dist, _) in res]) 
             cnts = np.sum([cnt for (_, _, cnt) in res])
