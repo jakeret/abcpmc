@@ -211,7 +211,7 @@ class Sampler(object):
             pool = PoolSpec(0, eps, self.N/cnts, thetas, dists, ws)
             yield pool
         
-        for t, eps in enumerate(eps_proposal, 1):
+        for t, eps in enumerate(eps_proposal, pool.t + 1):
             particleProposal = self.particle_proposal_cls(self, eps, pool, self.particle_proposal_kwargs)
             
             res = list(self.mapFunc(particleProposal, range(self.N)))
