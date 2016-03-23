@@ -81,7 +81,9 @@ class TestRejectionSamplingWrapperWrapper(object):
         p = 0.5
         dist = lambda x,y: p
         Y = None
-        wrapper = abcpmc.sampler._RejectionSamplingWrapper(eps, prior, postfn, dist, Y)
+        
+        sampler = abcpmc.Sampler(2, Y, postfn, dist)
+        wrapper = abcpmc.sampler._RejectionSamplingWrapper(sampler, eps, prior)
         rthetai, rp, cnt = wrapper(0)
         assert thetai == rthetai
         assert p == rp
@@ -105,7 +107,8 @@ class TestRejectionSamplingWrapperWrapper(object):
         
         dist.side_effect = distances
         Y = None
-        wrapper = abcpmc.sampler._RejectionSamplingWrapper(threshold, prior, postfn, dist, Y)
+        sampler = abcpmc.Sampler(2, Y, postfn, dist)
+        wrapper = abcpmc.sampler._RejectionSamplingWrapper(sampler, threshold, prior)
         _, _, cnt = wrapper(0)
         assert cnt == len(distances)
 
@@ -265,14 +268,25 @@ class TestSampler(object):
         T = 2
         postfn = lambda theta: None
         
-        dist = lambda X, Y: 0
+        dist = 1.0
+        distfn = lambda X, Y: dist
         prior = abcpmc.TophatPrior([0], [100])
-        sampler = abcpmc.Sampler(N, 0, postfn, dist)
+        sampler = abcpmc.Sampler(N, 0, postfn, distfn)
         
-        eps_proposal = abcpmc.ConstEps(T, 10)
+        eps = 10
+        eps_proposal = abcpmc.ConstEps(T, eps)
         for i, pool in enumerate(sampler.sample(prior, eps_proposal)):
             assert pool is not None
+            assert pool.t == i
+            assert pool.ratio == 1.0
+            assert pool.eps == eps
             assert len(pool.thetas) == N
+            assert np.all(pool.thetas != 0.0)
+            assert len(pool.dists) == N
+            assert np.all(pool.dists == dist)
+            assert len(pool.ws) == N
+            assert np.allclose(np.sum(pool.ws), 1.0)
+            
         
         assert i+1 == T
 
