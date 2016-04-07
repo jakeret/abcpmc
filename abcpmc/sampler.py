@@ -25,6 +25,7 @@ from collections import namedtuple
 import numpy as np
 from scipy import stats
 from scipy import spatial
+import time
 
 __all__ = ["GaussianPrior", 
            "TophatPrior", 
@@ -96,14 +97,14 @@ class ParticleProposal(object):
     def __call__(self, i):
         cnt = 1
         # setting seed to prevent problem with multiprocessing
-        self._random.seed(i)
+        self._random.seed(int(time+time())+i)
         while True:
             idx = self._random.choice(range(self.N), 1, p= self.pool.ws/np.sum(self.pool.ws))[0]
             theta = self.pool.thetas[idx]
             sigma = self._get_sigma(theta, **self.kwargs)
             sigma = np.atleast_2d(sigma)
             thetap = self._random.multivariate_normal(theta, sigma)
-            X = self.postfn(thetap)
+            X = self.postfn(thetap,random=self._random)
             p = np.asarray(self.distfn(X, self.Y))
             
             if np.all(p <= self.eps):
@@ -268,13 +269,13 @@ class _RejectionSamplingWrapper(object):  # @DontTrace
     def __call__(self, i):
         cnt = 1
         try: # setting seed to prevent problem with multiprocessing 
-            self._random.seed(i)
+            self._random.seed(int(time+time())+i)
             self.prior._random = self._random 
         except: pass
         
         while True:
             thetai = self.prior()
-            X = self.postfn(thetai)
+            X = self.postfn(thetai,random=self._random)
             p = np.asarray(self.distfn(X, self.Y))
             if np.all(p <= self.eps):
                 break
