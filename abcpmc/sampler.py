@@ -188,27 +188,31 @@ class Sampler(object):
             self.mapFunc  = self.pool.map
             
     
-    def sample(self, prior, eps_proposal):
+    def sample(self, prior, eps_proposal, initialPool=None):
         """
         Launches the sampling process. Yields the intermediate results per iteration.
         
         :param prior: instance of a prior definition (or an other callable)  see :py:class:`sampler.GaussianPrior`
         :param eps_proposal: an instance of a threshold proposal (or an other callable) see :py:class:`sampler.ConstEps`
+        :param initialPool: a PoolSpec object to be used as initial sample. if none is given this is created using _RejectionSamplingWrapper
         
         :yields pool: yields a namedtuple representing the values of one iteration
         """
-        
-        eps = eps_proposal.next()
-        wrapper = _RejectionSamplingWrapper(self, eps, prior)
-        
-        res = list(self.mapFunc(wrapper, range(self.N)))
-        thetas = np.array([theta for (theta, _, _) in res])
-        dists = np.array([dist for (_, dist, _) in res])
-        cnts = np.sum([cnt for (_, _, cnt) in res])
-        ws = np.ones(self.N) / self.N
-        
-        pool = PoolSpec(0, eps, self.N/cnts, thetas, dists, ws)
-        yield pool
+
+        if initialPool==None:        
+            eps = eps_proposal.next()
+            wrapper = _RejectionSamplingWrapper(self, eps, prior)
+            
+            res = list(self.mapFunc(wrapper, range(self.N)))
+            thetas = np.array([theta for (theta, _, _) in res])
+            dists = np.array([dist for (_, dist, _) in res])
+            cnts = np.sum([cnt for (_, _, cnt) in res])
+            ws = np.ones(self.N) / self.N
+            
+            pool = PoolSpec(0, eps, self.N/cnts, thetas, dists, ws)
+            yield pool
+        else:
+            pool=initialPool
         
         for t, eps in enumerate(eps_proposal, 1):
             particleProposal = self.particle_proposal_cls(self, eps, pool, self.particle_proposal_kwargs)
