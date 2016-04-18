@@ -26,6 +26,7 @@ import numpy as np
 from scipy import stats
 from scipy import spatial
 import time
+import os
 
 __all__ = ["GaussianPrior", 
            "TophatPrior", 
