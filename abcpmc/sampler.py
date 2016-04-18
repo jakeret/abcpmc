@@ -31,7 +31,8 @@ __all__ = ["GaussianPrior",
            "ParticleProposal", 
            "KNNParticleProposal", 
            "OLCMParticleProposal", 
-           "Sampler", 
+           "Sampler",
+           "PoolSpec", 
            "weighted_cov", 
            "weighted_avg_and_std"
            ]
@@ -186,29 +187,31 @@ class Sampler(object):
             self.mapFunc  = self.pool.map
             
     
-    def sample(self, prior, eps_proposal):
+    def sample(self, prior, eps_proposal, pool=None):
         """
         Launches the sampling process. Yields the intermediate results per iteration.
         
         :param prior: instance of a prior definition (or an other callable)  see :py:class:`sampler.GaussianPrior`
         :param eps_proposal: an instance of a threshold proposal (or an other callable) see :py:class:`sampler.ConstEps`
+        :param pool: (optional) a PoolSpec instance,if not None the initial rejection sampling 
+        will be skipped and the pool is used for the further sampling
         
         :yields pool: yields a namedtuple representing the values of one iteration
         """
+        if pool is None:
+            eps = eps_proposal.next()
+            wrapper = _RejectionSamplingWrapper(self, eps, prior)
+            
+            res = list(self.mapFunc(wrapper, range(self.N)))
+            thetas = np.array([theta for (theta, _, _) in res])
+            dists = np.array([dist for (_, dist, _) in res])
+            cnts = np.sum([cnt for (_, _, cnt) in res])
+            ws = np.ones(self.N) / self.N
+            
+            pool = PoolSpec(0, eps, self.N/cnts, thetas, dists, ws)
+            yield pool
         
-        eps = eps_proposal.next()
-        wrapper = _RejectionSamplingWrapper(self, eps, prior)
-        
-        res = list(self.mapFunc(wrapper, range(self.N)))
-        thetas = np.array([theta for (theta, _, _) in res])
-        dists = np.array([dist for (_, dist, _) in res])
-        cnts = np.sum([cnt for (_, _, cnt) in res])
-        ws = np.ones(self.N) / self.N
-        
-        pool = PoolSpec(0, eps, self.N/cnts, thetas, dists, ws)
-        yield pool
-        
-        for t, eps in enumerate(eps_proposal, 1):
+        for t, eps in enumerate(eps_proposal, pool.t + 1):
             particleProposal = self.particle_proposal_cls(self, eps, pool, self.particle_proposal_kwargs)
             
             res = list(self.mapFunc(particleProposal, range(self.N)))
@@ -231,7 +234,9 @@ class Sampler(object):
         Tries to close the pool (avoid hanging threads)
         """
         if hasattr(self, "pool") and self.pool is not None:
-            self.pool.close()
+            try:
+                self.pool.close()
+            except: pass
 
    
 class _WeightWrapper(object):  # @DontTrace
