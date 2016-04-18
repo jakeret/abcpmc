@@ -97,7 +97,7 @@ class ParticleProposal(object):
     def __call__(self, i):
         cnt = 1
         # setting seed to prevent problem with multiprocessing
-        self._random.seed(int(time.time()*1000)*i) #microseconds times i (if using addition two cores with consecutive numbers which get seeded with 1 mus delay get the same seed). maxint should not be reached even in a very long time and with a very high number of cores
+        self._random.seed(int(time.time())+os.getpid()*i) 
         while True:
             idx = self._random.choice(range(self.N), 1, p= self.pool.ws/np.sum(self.pool.ws))[0]
             theta = self.pool.thetas[idx]
@@ -269,7 +269,7 @@ class _RejectionSamplingWrapper(object):  # @DontTrace
     def __call__(self, i):
         cnt = 1
         try: # setting seed to prevent problem with multiprocessing 
-            self._random.seed(int(time.time()*1000)*i) #microseconds times i (if using addition two cores with consecutive numbers which get seeded with 1 mus delay get the same seed). maxint should not be reached even in a very long time and with a very high number of cores
+            self._random.seed(int(time.time())+os.getpid()*i) 
             self.prior._random = self._random 
         except: pass
         
