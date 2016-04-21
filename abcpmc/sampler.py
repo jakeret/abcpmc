@@ -33,7 +33,8 @@ __all__ = ["GaussianPrior",
            "ParticleProposal", 
            "KNNParticleProposal", 
            "OLCMParticleProposal", 
-           "Sampler", 
+           "Sampler",
+           "PoolSpec", 
            "weighted_cov", 
            "weighted_avg_and_std"
            ]
@@ -96,9 +97,10 @@ class ParticleProposal(object):
         self.sigma = 2 * weighted_cov(pool.thetas, pool.ws)
     
     def __call__(self, i):
-        cnt = 1
         # setting seed to prevent problem with multiprocessing
-        self._random.seed(int(time.time())+os.getpid()*i) 
+
+        self._random.seed(i)
+        cnt = 1
         while True:
             idx = self._random.choice(range(self.N), 1, p= self.pool.ws/np.sum(self.pool.ws))[0]
             theta = self.pool.thetas[idx]
@@ -188,22 +190,23 @@ class Sampler(object):
             self.mapFunc  = self.pool.map
             
     
-    def sample(self, prior, eps_proposal, initialPool=None):
+
+    def sample(self, prior, eps_proposal, pool=None):
         """
         Launches the sampling process. Yields the intermediate results per iteration.
         
         :param prior: instance of a prior definition (or an other callable)  see :py:class:`sampler.GaussianPrior`
         :param eps_proposal: an instance of a threshold proposal (or an other callable) see :py:class:`sampler.ConstEps`
-        :param initialPool: a PoolSpec object to be used as initial sample. if none is given this is created using _RejectionSamplingWrapper
+        :param pool: (optional) a PoolSpec instance,if not None the initial rejection sampling 
+        will be skipped and the pool is used for the further sampling
         
         :yields pool: yields a namedtuple representing the values of one iteration
         """
-
-        if initialPool==None:        
+        if pool is None:
             eps = eps_proposal.next()
             wrapper = _RejectionSamplingWrapper(self, eps, prior)
             
-            res = list(self.mapFunc(wrapper, range(self.N)))
+            res = list(self.mapFunc(wrapper, self._random.randint(0, np.iinfo(np.uint32).max, self.N)))
             thetas = np.array([theta for (theta, _, _) in res])
             dists = np.array([dist for (_, dist, _) in res])
             cnts = np.sum([cnt for (_, _, cnt) in res])
@@ -211,13 +214,12 @@ class Sampler(object):
             
             pool = PoolSpec(0, eps, self.N/cnts, thetas, dists, ws)
             yield pool
-        else:
-            pool=initialPool
+
         
-        for t, eps in enumerate(eps_proposal, 1):
+        for t, eps in enumerate(eps_proposal, pool.t + 1):
             particleProposal = self.particle_proposal_cls(self, eps, pool, self.particle_proposal_kwargs)
             
-            res = list(self.mapFunc(particleProposal, range(self.N)))
+            res = list(self.mapFunc(particleProposal, self._random.randint(0, np.iinfo(np.uint32).max, self.N)))
             thetas = np.array([theta for (theta, _, _) in res])
             dists = np.array([dist for (_, dist, _) in res]) 
             cnts = np.sum([cnt for (_, _, cnt) in res])
@@ -237,7 +239,9 @@ class Sampler(object):
         Tries to close the pool (avoid hanging threads)
         """
         if hasattr(self, "pool") and self.pool is not None:
-            self.pool.close()
+            try:
+                self.pool.close()
+            except: pass
 
    
 class _WeightWrapper(object):  # @DontTrace
@@ -272,12 +276,13 @@ class _RejectionSamplingWrapper(object):  # @DontTrace
         self.prior = prior
     
     def __call__(self, i):
-        cnt = 1
-        try: # setting seed to prevent problem with multiprocessing 
-            self._random.seed(int(time.time())+os.getpid()*i) 
+        # setting seed to prevent problem with multiprocessing
+        self._random.seed(i)
+        try:
             self.prior._random = self._random 
         except: pass
         
+        cnt = 1
         while True:
             thetai = self.prior()
             X = self.postfn(thetai,random=self._random)
