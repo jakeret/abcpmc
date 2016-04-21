@@ -25,8 +25,6 @@ from collections import namedtuple
 import numpy as np
 from scipy import stats
 from scipy import spatial
-import time
-import os
 
 __all__ = ["GaussianPrior", 
            "TophatPrior", 
@@ -86,6 +84,7 @@ class ParticleProposal(object):
     """
     def __init__(self, sampler, eps, pool, kwargs):
         self.postfn = sampler.postfn
+        self.postFnRngState=sampler.postFnRngState
         self.distfn = sampler.dist
         self._random = sampler._random
         self.Y = sampler.Y
@@ -107,7 +106,10 @@ class ParticleProposal(object):
             sigma = self._get_sigma(theta, **self.kwargs)
             sigma = np.atleast_2d(sigma)
             thetap = self._random.multivariate_normal(theta, sigma)
-            X = self.postfn(thetap,random=self._random)
+            if self.postFnRngState:
+                X = self.postfn(thetai,random=self._random)
+            else:
+                X = self.postfn(thetai)
             p = np.asarray(self.distfn(X, self.Y))
             
             if np.all(p <= self.eps):
@@ -167,17 +169,19 @@ class Sampler(object):
     :param dist: distance function rho(X, Y) (a callable)
     :param threads: (optional) number of threads. If >1 and no pool is given <threads> multiprocesses will be started
     :param pool: (optional) a pool instance which has a <map> function 
+    :param postFnRngState: (optional, default=False) if True give a random state object to postfn
     """
     
     particle_proposal_cls = ParticleProposal
     particle_proposal_kwargs = {}
     
-    def __init__(self, N, Y, postfn, dist, threads=1, pool=None):
+    def __init__(self, N, Y, postfn, dist, threads=1, pool=None, postFnRngState=False):
         self.N = N
         self.Y = Y
         self.postfn = postfn
         self.dist = dist
         self._random = np.random.mtrand.RandomState()
+        self.postFnRngState=postFnRngState
 
         if pool is not None:
             self.pool = pool
@@ -272,6 +276,7 @@ class _RejectionSamplingWrapper(object):  # @DontTrace
         self.distfn = sampler.dist
         self._random = sampler._random
         self.Y = sampler.Y
+        self.postFnRngState=sampler.postFnRngState
         self.eps = np.asarray(eps)
         self.prior = prior
     
@@ -285,7 +290,10 @@ class _RejectionSamplingWrapper(object):  # @DontTrace
         cnt = 1
         while True:
             thetai = self.prior()
-            X = self.postfn(thetai,random=self._random)
+            if self.postFnRngState:
+                X = self.postfn(thetai,random=self._random)
+            else:
+                X = self.postfn(thetai)
             p = np.asarray(self.distfn(X, self.Y))
             if np.all(p <= self.eps):
                 break
