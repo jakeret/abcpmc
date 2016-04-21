@@ -95,9 +95,9 @@ class ParticleProposal(object):
         self.sigma = 2 * weighted_cov(pool.thetas, pool.ws)
     
     def __call__(self, i):
-        cnt = 1
         # setting seed to prevent problem with multiprocessing
         self._random.seed(i)
+        cnt = 1
         while True:
             idx = self._random.choice(range(self.N), 1, p= self.pool.ws/np.sum(self.pool.ws))[0]
             theta = self.pool.thetas[idx]
@@ -202,7 +202,7 @@ class Sampler(object):
             eps = eps_proposal.next()
             wrapper = _RejectionSamplingWrapper(self, eps, prior)
             
-            res = list(self.mapFunc(wrapper, range(self.N)))
+            res = list(self.mapFunc(wrapper, self._random.randint(0, np.iinfo(np.uint32).max, self.N)))
             thetas = np.array([theta for (theta, _, _) in res])
             dists = np.array([dist for (_, dist, _) in res])
             cnts = np.sum([cnt for (_, _, cnt) in res])
@@ -214,7 +214,7 @@ class Sampler(object):
         for t, eps in enumerate(eps_proposal, pool.t + 1):
             particleProposal = self.particle_proposal_cls(self, eps, pool, self.particle_proposal_kwargs)
             
-            res = list(self.mapFunc(particleProposal, range(self.N)))
+            res = list(self.mapFunc(particleProposal, self._random.randint(0, np.iinfo(np.uint32).max, self.N)))
             thetas = np.array([theta for (theta, _, _) in res])
             dists = np.array([dist for (_, dist, _) in res]) 
             cnts = np.sum([cnt for (_, _, cnt) in res])
@@ -271,12 +271,13 @@ class _RejectionSamplingWrapper(object):  # @DontTrace
         self.prior = prior
     
     def __call__(self, i):
-        cnt = 1
-        try: # setting seed to prevent problem with multiprocessing 
-            self._random.seed(i)
+        # setting seed to prevent problem with multiprocessing
+        self._random.seed(i)
+        try:
             self.prior._random = self._random 
         except: pass
         
+        cnt = 1
         while True:
             thetai = self.prior()
             X = self.postfn(thetai)
