@@ -107,9 +107,9 @@ class ParticleProposal(object):
             sigma = np.atleast_2d(sigma)
             thetap = self._random.multivariate_normal(theta, sigma)
             if self.postFnRngState:
-                X = self.postfn(thetai,random=self._random)
+                X = self.postfn(thetap,random=self._random)
             else:
-                X = self.postfn(thetai)
+                X = self.postfn(thetap)
             p = np.asarray(self.distfn(X, self.Y))
             
             if np.all(p <= self.eps):
