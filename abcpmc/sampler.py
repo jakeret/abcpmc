@@ -115,7 +115,7 @@ class ParticleProposal(object):
             if np.all(p <= self.eps):
                 break
             cnt+=1
-        return thetap, p, cnt
+        return thetap, p, cnt, X
 
     def _get_sigma(self, theta):
         return self.sigma
@@ -157,7 +157,7 @@ class OLCMParticleProposal(ParticleProposal):
 
 
 """Namedtuple representing a pool of one sampling iteration"""
-PoolSpec = namedtuple("PoolSpec", ["t", "eps", "ratio", "thetas", "dists", "ws"])
+PoolSpec = namedtuple("PoolSpec", ["t", "eps", "ratio", "thetas", "dists", "ws", "modelOutp"])
 
 class Sampler(object):
     """
@@ -211,12 +211,14 @@ class Sampler(object):
             wrapper = _RejectionSamplingWrapper(self, eps, prior)
             
             res = list(self.mapFunc(wrapper, self._random.randint(0, np.iinfo(np.uint32).max, self.N)))
-            thetas = np.array([theta for (theta, _, _) in res])
-            dists = np.array([dist for (_, dist, _) in res])
-            cnts = np.sum([cnt for (_, _, cnt) in res])
+            thetas = np.array([theta for (theta, _, _, _) in res])
+            dists = np.array([dist for (_, dist, _, _) in res])
+            cnts = np.sum([cnt for (_, _, cnt, _) in res])
+            modelOutp = np.array([x for (_, _, _, x) in res])
+
             ws = np.ones(self.N) / self.N
             
-            pool = PoolSpec(0, eps, self.N/cnts, thetas, dists, ws)
+            pool = PoolSpec(0, eps, self.N/cnts, thetas, dists, ws, modelOutp)
             yield pool
 
         
@@ -224,9 +226,10 @@ class Sampler(object):
             particleProposal = self.particle_proposal_cls(self, eps, pool, self.particle_proposal_kwargs)
             
             res = list(self.mapFunc(particleProposal, self._random.randint(0, np.iinfo(np.uint32).max, self.N)))
-            thetas = np.array([theta for (theta, _, _) in res])
-            dists = np.array([dist for (_, dist, _) in res]) 
-            cnts = np.sum([cnt for (_, _, cnt) in res])
+            thetas = np.array([theta for (theta, _, _, _) in res])
+            dists = np.array([dist for (_, dist, _, _) in res])
+            cnts = np.sum([cnt for (_, _, cnt, _) in res])
+            modelOutp = np.array([x for (_, _, _, x) in res])
             
             sigma = 2 * weighted_cov(pool.thetas, pool.ws)
             wrapper = _WeightWrapper(prior, sigma, pool.ws, pool.thetas)
@@ -234,7 +237,7 @@ class Sampler(object):
             wt = np.array(list(self.mapFunc(wrapper, thetas)))
             ws = wt/np.sum(wt)
             
-            pool = PoolSpec(t, eps, self.N/cnts, thetas, dists, ws)
+            pool = PoolSpec(t, eps, self.N/cnts, thetas, dists, ws, podelOutp)
             yield pool
             
             
@@ -298,7 +301,7 @@ class _RejectionSamplingWrapper(object):  # @DontTrace
             if np.all(p <= self.eps):
                 break
             cnt+=1
-        return thetai, p, cnt
+        return thetai, p, cnt, X
 
 def weighted_cov(values, weights):
     """
