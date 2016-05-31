@@ -237,7 +237,7 @@ class Sampler(object):
             wt = np.array(list(self.mapFunc(wrapper, thetas)))
             ws = wt/np.sum(wt)
             
-            pool = PoolSpec(t, eps, self.N/cnts, thetas, dists, ws, podelOutp)
+            pool = PoolSpec(t, eps, self.N/cnts, thetas, dists, ws, modelOutp)
             yield pool
             
             
