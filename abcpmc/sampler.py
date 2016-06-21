@@ -78,6 +78,35 @@ class TophatPrior(object):
         else:
             return 1 if np.all(theta < self.max) and np.all(theta >= self.min) else 0
 
+class TruncatedGaussianPrior(object):
+    """
+    Truncated gaussian prior. Assumes independance (covariance=0).
+     
+    :param mu: scalar or vector of means
+    :param sigma: scalar variance or covariance matrix
+    :param min: scalar or array of min values
+    :param max: scalar or array of max values
+    """
+    
+    def __init__(self, mu, sigma, min, max):
+        self.mu = mu
+        self.sigma = sigma
+        self._random = np.random.mtrand.RandomState()
+        self.min = (np.atleast_1d(min) - mu) / sigma #transform to our mu and sigma
+        self.max = (np.atleast_1d(max) - mu) / sigma
+        assert self.min.shape == self.max.shape
+        assert self.sigma.shape == self.max.shape
+        assert self.mu.shape == self.max.shape
+
+    def __call__(self, theta=None):
+        if theta is None:
+            return [stats.truncnorm.rvs(self.min[i], self.max[i], loc=self.mu[i], scale=self.sigma[i], random_state=self._random) for i in xrange(self.min.shape[0])]
+        else:
+            theta=np.atleast_1d(theta)
+            assert theta.shape==self.mu.shape # check if theta is the right size!
+            return np.prod([stats.truncnorm.pdf(theta[i], self.min[i], self.max[i], loc=self.mu[i], scale=self.sigma[i]) for i in xrange(self.min.shape[0])])
+
+
 class ParticleProposal(object):
     """
     Creates new particles using twice the weighted covariance matrix (Beaumont et al. 2009)
