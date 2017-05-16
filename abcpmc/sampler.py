@@ -293,7 +293,7 @@ class _WeightWrapper(object):  # @DontTrace
         self.thetas = thetas
     
     def __call__(self, theta):
-        kernel = stats.multivariate_normal(theta, self.sigma).pdf
+        kernel = stats.multivariate_normal(theta, self.sigma, allow_singular=True).pdf
         w = self.prior(theta) / np.sum(self.ws * kernel(self.thetas))
         return w
     
