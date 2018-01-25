@@ -129,7 +129,7 @@ class KNNParticleProposal(ParticleProposal):
 
 class OLCMParticleProposal(ParticleProposal):
     """
-    Creates new particles using an optimal loacl covariance matrix (Fillipi et al. 2012)
+    Creates new particles using an optimal local covariance matrix (Fillipi et al. 2012)
     """
     
     def _get_sigma(self, theta):
